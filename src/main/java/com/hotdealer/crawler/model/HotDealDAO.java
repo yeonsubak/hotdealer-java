@@ -7,7 +7,7 @@ import java.util.HashMap;
 import lombok.Getter;
 
 @Getter
-public class HotDealDTO {
+public class HotDealDAO {
 
     private String dataSource;
     private String category;
@@ -19,7 +19,7 @@ public class HotDealDTO {
     private String postURL;
     private Timestamp createAt;
 
-    public HotDealDTO(HashMap<String, Object> hotDealExtract) {
+    public HotDealDAO(HashMap<String, Object> hotDealExtract) {
 
     }
 

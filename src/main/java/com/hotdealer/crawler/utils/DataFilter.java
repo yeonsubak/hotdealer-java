@@ -1,63 +1,11 @@
-package com.hotdealer.crawler.model;
+package com.hotdealer.crawler.utils;
 
 import java.math.BigDecimal;
-import java.sql.Timestamp;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-
-public class DataExtractor {
-
-    public static List<Element> filterHotDealList(Document response) {
-        return new ArrayList<>(response.select("li.li_best2_pop0"));
-    }
-
-    public static String extractCategory(Element hotDeal) {
-        return hotDeal.select("span.category").select("a").text();
-    }
-
-    public static String extractTitle(Element hotDeal) {
-        String orgTitle = hotDeal.select("h3.title").text();
-        String regexTitle = orgTitle.replaceAll("([^]]*$)", "");
-        regexTitle = regexTitle.replaceAll("\\[[^\\]]*\\]", "").trim(); // \[[^\]]*\]
-        return regexTitle;
-    }
-
-    public static BigDecimal[] extractPrice(Element hotDeal) {
-        String orgPrice = hotDeal.select("div.hotdeal_info > span").get(1).text().replaceAll("가격: ", "");
-        return filterPrice(orgPrice);
-    }
-
-    public static CurrencyVO extractCurrency(Element hotDeal) {
-        String orgPrice = hotDeal.select("div.hotdeal_info > span").get(1).text().replaceAll("가격: ", "");
-        return new CurrencyVO(filterCurrency(orgPrice));
-    }
-
-    public static String extractShippingCost(Element hotDeal) {
-        return hotDeal.select("div.hotdeal_info > span").get(2).text().replaceAll("배송: ", "");
-    }
-
-    public static String extractShop(Element hotDeal) {
-        return hotDeal.select("div.hotdeal_info > span").get(0).text().replaceAll("쇼핑몰: ", "");
-    }
-
-    public static String extractPostUrl(Element hotDeal) {
-        return hotDeal.select("a").get(0).attr("href");
-    }
-
-    public static Timestamp extractCreateAt(Element hotDeal) throws ParseException {
-        String regDate = hotDeal.select("span.regdate").text().trim();
-        String todayStr = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
-        return new Timestamp(new SimpleDateFormat("yyyy-MM-dd HH:mm").parse(todayStr + " " + regDate).getTime());
-    }
+public class DataFilter {
 
     public static BigDecimal[] filterPrice(String price) {
         if (price.matches("(.*)[0-9](.*)") == false) {
@@ -72,7 +20,7 @@ public class DataExtractor {
             }
         }
 
-        String regexPrice = price.replaceAll("[a-zA-zㄱ-ㅣ가-힣|,|\\\\p{Sc}]", "");
+        String regexPrice = price.replaceAll("[a-zA-zㄱ-ㅣ가-힣,\\\\p{Sc}]", "");
         regexPrice = regexPrice.trim();
 
         if (regexPrice.contains("~")) {
@@ -130,5 +78,4 @@ public class DataExtractor {
 
         return "NULL";
     }
-
 }

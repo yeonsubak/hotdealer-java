@@ -7,31 +7,35 @@ import java.sql.Timestamp;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 import com.hotdealer.crawler.model.CurrencyVO;
+import com.hotdealer.crawler.utils.DataFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import com.hotdealer.crawler.model.DataExtractor;
+import com.hotdealer.crawler.utils.FMKDataExtractor;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 
 
-public class DataExtractorTest {
+public class FMKDataExtractorTest {
 
     private List<Element> hotDealItems;
+    private FMKDataExtractor fmkDataExtractor;
 
     @BeforeEach
     void setUp() throws IOException {
         File input = new File("src/main/resources/test/com/hotdealer/crawler/fmkorea_hotdeal_webpage_sample.html");
         Document resp = Jsoup.parse(input, "UTF-8");
-        hotDealItems = DataExtractor.filterHotDealList(resp);
+        fmkDataExtractor = new FMKDataExtractor();
+        hotDealItems = fmkDataExtractor.filterPosts(resp);
     }
 
     @Test
@@ -60,7 +64,7 @@ public class DataExtractorTest {
         };
 
         for (int i = 0; i < hotDealItems.size(); i++) {
-            String actual = DataExtractor.extractTitle(hotDealItems.get(i));
+            String actual = fmkDataExtractor.extractTitle(hotDealItems.get(i));
             assertEquals(titleExpArr[i], actual);
         }
     }
@@ -73,7 +77,7 @@ public class DataExtractorTest {
         );
 
         for (Element hotDeal : hotDealItems) {
-            String categoryExt = DataExtractor.extractCategory(hotDeal);
+            String categoryExt = fmkDataExtractor.extractCategory(hotDeal);
             assertTrue(categoryExpArr.contains(categoryExt));
         }
     }
@@ -93,11 +97,11 @@ public class DataExtractorTest {
 
         for (int i = 0; i < hotDealItems.size(); i++) {
             if (priceExpArr.get(i).getClass().isArray()) {
-                assertArrayEquals((Object[]) priceExpArr.get(i), DataExtractor.extractPrice(hotDealItems.get(i)));
+                assertArrayEquals((Object[]) priceExpArr.get(i), fmkDataExtractor.extractPrice(hotDealItems.get(i)));
                 continue;
             }
 
-            assertEquals(priceExpArr.get(i), DataExtractor.extractPrice(hotDealItems.get(i))[0]);
+            assertEquals(priceExpArr.get(i), fmkDataExtractor.extractPrice(hotDealItems.get(i))[0]);
         }
 
     }
@@ -118,7 +122,7 @@ public class DataExtractorTest {
         );
 
         for (int i = 0; i < hotDealItems.size(); i++) {
-            assertEquals(currencyExpArr.get(i), DataExtractor.extractCurrency(hotDealItems.get(i)));
+            assertEquals(currencyExpArr.get(i), fmkDataExtractor.extractCurrency(hotDealItems.get(i)));
         }
     }
 
@@ -131,7 +135,7 @@ public class DataExtractorTest {
         );
 
         for (int i = 0; i < hotDealItems.size(); i++) {
-            assertEquals(shippingCostExpArr.get(i), DataExtractor.extractShippingCost(hotDealItems.get(i)));
+            assertEquals(shippingCostExpArr.get(i), fmkDataExtractor.extractShippingCost(hotDealItems.get(i)));
         }
     }
 
@@ -144,7 +148,7 @@ public class DataExtractorTest {
         );
 
         for (int i = 0; i < hotDealItems.size(); i++) {
-            assertEquals(shopExpArr.get(i), DataExtractor.extractShop(hotDealItems.get(i)));
+            assertEquals(shopExpArr.get(i), fmkDataExtractor.extractShop(hotDealItems.get(i)));
         }
     }
 
@@ -158,24 +162,22 @@ public class DataExtractorTest {
         );
 
         for (int i = 0; i < hotDealItems.size(); i++) {
-            assertEquals(postUrlExpArr.get(i), DataExtractor.extractPostUrl(hotDealItems.get(i)));
+            assertEquals(postUrlExpArr.get(i), fmkDataExtractor.extractPostUrl(hotDealItems.get(i)));
         }
     }
 
     @Test
     void extractCreateAt() throws ParseException {
         SimpleDateFormat timeFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+        String todayStr = new SimpleDateFormat("yyyy-MM-dd").format(new Date());
         List<String> createAtExpArr = Arrays.asList(
-                "2023-02-26 22:38", "2023-02-26 22:29", "2023-02-26 22:26", "2023-02-26 22:12",
-                "2023-02-26 22:00", "2023-02-26 21:59", "2023-02-26 21:56", "2023-02-26 21:47",
-                "2023-02-26 21:31", "2023-02-26 21:23", "2023-02-26 21:13", "2023-02-26 21:11",
-                "2023-02-26 21:06", "2023-02-26 21:02", "2023-02-26 20:50", "2023-02-26 20:47",
-                "2023-02-26 20:43", "2023-02-26 20:16", "2023-02-26 20:14", "2023-02-26 19:57"
+                "22:38", "22:29", "22:26", "22:12", "22:00", "21:59", "21:56", "21:47", "21:31", "21:23", "21:13",
+                "21:11", "21:06", "21:02", "20:50", "20:47", "20:43", "20:16", "20:14", "19:57"
         );
-
         for (int i = 0; i < hotDealItems.size(); i++) {
-            Timestamp timestamp = new Timestamp(timeFormat.parse(createAtExpArr.get(i)).getTime());
-            assertEquals(timestamp, DataExtractor.extractCreateAt(hotDealItems.get(i)));
+            String createAtExp = String.format("%s %s", todayStr, createAtExpArr.get(i));
+            Timestamp timestamp = new Timestamp(timeFormat.parse(createAtExp).getTime());
+            assertEquals(timestamp, fmkDataExtractor.extractCreateAt(hotDealItems.get(i)));
         }
     }
 
@@ -198,11 +200,11 @@ public class DataExtractorTest {
 
         for (String key : krwTestSet.keySet()) {
             if (krwTestSet.get(key).getClass().isArray()) {
-                assertArrayEquals((Object[]) krwTestSet.get(key), DataExtractor.filterPrice(key));
+                assertArrayEquals((Object[]) krwTestSet.get(key), DataFilter.filterPrice(key));
                 continue;
             }
 
-            assertEquals(krwTestSet.get(key), DataExtractor.filterPrice(key)[0]);
+            assertEquals(krwTestSet.get(key), DataFilter.filterPrice(key)[0]);
         }
 
         LinkedHashMap<String, ?> usdTestSet = new LinkedHashMap<>() {{
@@ -222,7 +224,7 @@ public class DataExtractorTest {
         }};
 
         for (String key : usdTestSet.keySet()) {
-            assertEquals(usdTestSet.get(key), DataExtractor.filterPrice(key)[0]);
+            assertEquals(usdTestSet.get(key), DataFilter.filterPrice(key)[0]);
         }
 
         LinkedHashMap<String, ?> notPriceTestSet = new LinkedHashMap<>() {{
@@ -233,7 +235,7 @@ public class DataExtractorTest {
         }};
 
         for (String key : notPriceTestSet.keySet()) {
-            assertEquals(notPriceTestSet.get(key), DataExtractor.filterPrice(key)[0]);
+            assertEquals(notPriceTestSet.get(key), DataFilter.filterPrice(key)[0]);
         }
     }
 
@@ -316,7 +318,7 @@ public class DataExtractorTest {
         }};
 
         for (String key : filterCurrencyTestSet.keySet()) {
-            assertEquals(filterCurrencyTestSet.get(key), DataExtractor.filterCurrency(key), "Given Param: " + key);
+            assertEquals(filterCurrencyTestSet.get(key), DataFilter.filterCurrency(key), "Given Param: " + key);
         }
     }
 
